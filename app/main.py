@@ -6,6 +6,5 @@ app = FastAPI(
 )
 
 
-@app.get("/health")
-def health_check():
-    return {"status": "ok"}
+app.include_router(accounts.router)
+app.include_router(transfers.router)
