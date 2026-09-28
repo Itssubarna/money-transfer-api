@@ -1,14 +1,15 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Path, Query
+from fastapi import APIRouter, Depends, Header, Path, Query, Response
 from sqlalchemy.orm import Session
 
-from app import crud
-from app.db import get_session
+from app import services
+from app.db import crud, get_session
 from app.errors import ApiError
 from app.schemas.transfer import (
     TransactionPage,
     TransactionRead,
+    TransferCreate,
     TransferRead,
 )
 
@@ -62,3 +63,38 @@ def get_transactions(
         limit=limit,
         offset=offset,
     )
+@router.post(
+    "/transfers",
+    response_model=TransferRead,
+    status_code=201,
+)
+def create_transfer(
+    data: TransferCreate,
+    session: DatabaseSession,
+    response: Response,
+    idempotency_key: Annotated[
+        str | None,
+        Header(max_length=255),
+    ] = None,
+) -> TransferRead:
+
+    if (
+        idempotency_key is not None
+        and not idempotency_key.strip()
+    ):
+        raise ApiError(
+            422,
+            "INVALID_IDEMPOTENCY_KEY",
+            "Idempotency-Key cannot be blank",
+        )
+
+    transfer, created = services.transfer_money(
+        session,
+        data,
+        idempotency_key,
+    )
+
+    if not created:
+        response.status_code = 200
+
+    return TransferRead.model_validate(transfer)

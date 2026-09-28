@@ -19,10 +19,6 @@ class TransferCreate(BaseModel):
     from_account_id: AccountId
     to_account_id: AccountId
     amount: PositiveMoney
-    idempotency_key: str = Field(
-        min_length=1,
-        max_length=255,
-    )
 
 
 class TransferRead(BaseModel):

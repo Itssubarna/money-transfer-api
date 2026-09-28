@@ -3,8 +3,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Path
 from sqlalchemy.orm import Session
 
-from app import crud, services
-from app.db import get_session
+from app import services
+from app.db import crud, get_session
 from app.errors import ApiError
 from app.schemas.account import AccountCreate, AccountRead
 
