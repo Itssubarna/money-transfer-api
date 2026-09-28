@@ -4,9 +4,13 @@ from typing import Annotated
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, field_validator
 
 
+# Integer minor units (e.g. cents). The cap keeps values far below
+# SQLite's 64-bit INTEGER limit.
+MAX_MINOR_UNITS = 10**15
+
 NonnegativeMoney = Annotated[
     StrictInt,
-    Field(ge=0),
+    Field(ge=0, le=MAX_MINOR_UNITS),
 ]
 
 

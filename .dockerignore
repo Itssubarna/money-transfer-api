@@ -1,9 +1,10 @@
 .venv/
+.git/
+.vscode/
+.pytest_cache/
 __pycache__/
 *.pyc
-.env
 *.db
 *.db-wal
 *.db-shm
-.pytest_cache/
-.vscode/
+.env

@@ -3,10 +3,12 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StrictInt
 
+from app.schemas.account import MAX_MINOR_UNITS
+
 
 PositiveMoney = Annotated[
     StrictInt,
-    Field(gt=0),
+    Field(gt=0, le=MAX_MINOR_UNITS),
 ]
 
 AccountId = Annotated[

@@ -1,0 +1,24 @@
+services:
+  api:
+    build:
+      context: .
+      target: runtime
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: sqlite:////data/money_transfer.db
+      SQLITE_BUSY_TIMEOUT: "15"
+    volumes:
+      # Named volume on the local Docker host. Keep SQLite off network
+      # filesystems (NFS/SMB): its file locking is unreliable there.
+      - sqlite-data:/data
+    restart: unless-stopped
+
+  tests:
+    build:
+      context: .
+      target: test
+    profiles: ["test"]
+
+volumes:
+  sqlite-data:

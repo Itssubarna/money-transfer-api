@@ -4,8 +4,9 @@ from fastapi import APIRouter, Depends, Header, Path, Query, Response
 from sqlalchemy.orm import Session
 
 from app import services
-from app.db import crud, get_session
-from app.errors import ApiError
+from app.db import get_session
+from app.errors import InvalidRequestError
+from app.schemas.error import error_responses
 from app.schemas.transfer import (
     TransactionPage,
     TransactionRead,
@@ -13,7 +14,7 @@ from app.schemas.transfer import (
     TransferRead,
 )
 
-router = APIRouter()
+router = APIRouter(tags=["transfers"])
 
 DatabaseSession = Annotated[
     Session,
@@ -24,6 +25,7 @@ DatabaseSession = Annotated[
 @router.get(
     "/accounts/{account_id}/transactions",
     response_model=TransactionPage,
+    responses=error_responses(404, 422),
 )
 def get_transactions(
     account_id: Annotated[int, Path(gt=0)],
@@ -31,15 +33,7 @@ def get_transactions(
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> TransactionPage:
-
-    if crud.get_account(session, account_id) is None:
-        raise ApiError(
-            404,
-            "ACCOUNT_NOT_FOUND",
-            "Account not found",
-        )
-
-    transfers = crud.list_transactions(
+    transfers = services.get_account_transactions(
         session,
         account_id,
         limit,
@@ -63,10 +57,19 @@ def get_transactions(
         limit=limit,
         offset=offset,
     )
+
+
 @router.post(
     "/transfers",
     response_model=TransferRead,
     status_code=201,
+    responses={
+        200: {
+            "model": TransferRead,
+            "description": "Replay of an earlier request with the same Idempotency-Key",
+        },
+        **error_responses(400, 404, 409, 422),
+    },
 )
 def create_transfer(
     data: TransferCreate,
@@ -74,7 +77,11 @@ def create_transfer(
     response: Response,
     idempotency_key: Annotated[
         str | None,
-        Header(max_length=255),
+        Header(
+            max_length=255,
+            description="Optional client-generated key; retries with the "
+            "same key and body return the original transfer.",
+        ),
     ] = None,
 ) -> TransferRead:
 
@@ -82,8 +89,7 @@ def create_transfer(
         idempotency_key is not None
         and not idempotency_key.strip()
     ):
-        raise ApiError(
-            422,
+        raise InvalidRequestError(
             "INVALID_IDEMPOTENCY_KEY",
             "Idempotency-Key cannot be blank",
         )

@@ -1,3 +1,3 @@
-from .session import get_session
+from .session import get_session, write_transaction
 
-__all__ = ["get_session"]
+__all__ = ["get_session", "write_transaction"]
